@@ -10,7 +10,5 @@ export default defineConfig({
       tsconfigPaths: true,
     },
   },
-  nitro: {
-    preset: 'vercel',
-  },
+  nitro: false,
 })
