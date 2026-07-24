@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { projectsQO, tasksQO } from "@/lib/queries";
-import { PageHeader } from "@/components/PageHeader";
-import { TaskList } from "@/components/TaskList";
+
 import { format, isToday, parseISO } from "date-fns";
+import { projectsQO, tasksQO } from "../../lib/queries";
+import { PageHeader } from "../../components/PageHeader";
+import { TaskList } from "../../components/TaskList";
 
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({

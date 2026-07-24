@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { projectsQO, tasksQO } from "@/lib/queries";
-import { PageHeader } from "@/components/PageHeader";
-import { TaskList } from "@/components/TaskList";
+import { projectsQO, tasksQO } from "../../lib/queries";
+import { PageHeader } from "../../components/PageHeader";
+import { TaskList } from "../../components/TaskList";
+
 
 export const Route = createFileRoute("/_authenticated/inbox")({
   head: () => ({ meta: [{ title: "Inbox — Focus" }, { name: "description", content: "Unscheduled tasks to triage." }] }),

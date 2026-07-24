@@ -1,11 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { projectsQO, tasksQO, useProjectMutations } from "@/lib/queries";
-import { PageHeader } from "@/components/PageHeader";
-import { TaskList, TaskRow } from "@/components/TaskList";
-import { STATUSES, STATUS_LABEL, useUI } from "@/lib/store";
+
 import { useState } from "react";
 import { LayoutGrid, List, Plus, Trash2 } from "lucide-react";
+import { projectsQO, tasksQO, useProjectMutations } from "../../lib/queries";
+import { STATUS_LABEL, STATUSES, useUI } from "../../lib/store";
+import { PageHeader } from "../../components/PageHeader";
+import { TaskList, TaskRow } from "../../components/TaskList";
 
 export const Route = createFileRoute("/_authenticated/projects/$id")({
   loader: ({ context }) => {
