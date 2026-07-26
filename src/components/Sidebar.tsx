@@ -3,6 +3,7 @@ import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
   CalendarDays, Inbox, CalendarRange, ListTodo, Flame, Plus, Focus as FocusIcon, LogOut,
+  MapIcon,
 } from "lucide-react";
 import { projectsQO } from "../lib/queries";
 import { useUI } from "../lib/store";
@@ -11,8 +12,9 @@ import { NotificationsBell } from "./NitificationBell";
 
 const NAV = [
   { to: "/", label: "Today", icon: CalendarDays },
-  { to: "/inbox", label: "Inbox", icon: Inbox },
-  { to: "/weekly", label: "Weekly", icon: CalendarRange },
+  { to: "/unscheduled", label: "Unscheduled", icon: Inbox },
+  { to: "/monthly", label: "Monthly", icon: CalendarRange },
+  { to: "/roadmaps", label: "Roadmaps", icon: MapIcon },
   { to: "/habits", label: "Habits", icon: Flame },
 ];
 

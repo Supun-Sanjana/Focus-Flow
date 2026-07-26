@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { habitLogsQO, habitsQO, useInvalidate } from "@/lib/queries";
 import { format, subDays, differenceInCalendarDays } from "date-fns";
 import { useMutation } from "@tanstack/react-query";
 import * as api from "../../lib/api";
 import { useState } from "react";
 import { Check, Flame, Plus, Trash2 } from "lucide-react";
+import { PageHeader } from "../../components/PageHeader";
+import { habitLogsQO, habitsQO, useInvalidate } from "../../lib/queries";
 
 export const Route = createFileRoute("/_authenticated/habits")({
   head: () => ({ meta: [{ title: "Habits — Focus" }, { name: "description", content: "Build habits with a daily checklist and streaks." }] }),

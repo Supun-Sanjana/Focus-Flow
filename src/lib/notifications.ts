@@ -3,8 +3,38 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { Task } from "./api";
 
+
 const STORAGE_KEY = "focus.notified.v2";
+const READ_KEY = "focus.notif.read.v1";
 const PERM_ASKED_KEY = "focus.notif.perm-asked";
+
+export function loadReadSet(): Set<string> {
+  try {
+    const raw = localStorage.getItem(READ_KEY);
+    return new Set(raw ? (JSON.parse(raw) as string[]) : []);
+  } catch {
+    return new Set();
+  }
+}
+function saveReadSet(set: Set<string>) {
+  try {
+    localStorage.setItem(READ_KEY, JSON.stringify(Array.from(set)));
+  } catch {
+    /* ignore */
+  }
+}
+export function markRead(keys: string[]) {
+  const set = loadReadSet();
+  for (const k of keys) set.add(k);
+  saveReadSet(set);
+  window.dispatchEvent(new Event("focus:notif-read-changed"));
+}
+export function markUnread(keys: string[]) {
+  const set = loadReadSet();
+  for (const k of keys) set.delete(k);
+  saveReadSet(set);
+  window.dispatchEvent(new Event("focus:notif-read-changed"));
+}
 
 type Trigger = "lead" | "morning" | "overdue";
 
