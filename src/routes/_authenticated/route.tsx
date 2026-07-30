@@ -1,10 +1,10 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { Suspense } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { Sidebar, MobileNav } from "@/components/Sidebar";
-import { TaskDetail } from "@/components/TaskDetail";
-import { QuickAdd } from "@/components/QuickAdd";
-import { useReminderEngine } from "@/lib/notifications";
+import { supabase } from "../../integrations/supabase/client";
+import { useReminderEngine } from "../../lib/notifications";
+import { MobileNav, Sidebar } from "../../components/Sidebar";
+import { QuickAdd } from "../../components/QuickAdd";
+import { TaskDetail } from "../../components/TaskDetail";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,

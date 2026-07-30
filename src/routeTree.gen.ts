@@ -15,6 +15,7 @@ import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedHabitsRouteImport } from './routes/_authenticated/habits'
 import { Route as AuthenticatedMonthlyRouteImport } from './routes/_authenticated/monthly'
 import { Route as AuthenticatedUnscheduledRouteImport } from './routes/_authenticated/unscheduled'
+import { Route as AuthenticatedWeeklyRouteImport } from './routes/_authenticated/weekly'
 import { Route as AuthenticatedProjectsIndexRouteImport } from './routes/_authenticated/projects.index'
 import { Route as AuthenticatedProjectsIdRouteImport } from './routes/_authenticated/projects.$id'
 import { Route as AuthenticatedRoadmapsIndexRouteImport } from './routes/_authenticated/roadmaps.index'
@@ -50,6 +51,11 @@ const AuthenticatedUnscheduledRoute =
     path: '/unscheduled',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedWeeklyRoute = AuthenticatedWeeklyRouteImport.update({
+  id: '/weekly',
+  path: '/weekly',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedProjectsIndexRoute =
   AuthenticatedProjectsIndexRouteImport.update({
     id: '/projects/',
@@ -79,6 +85,7 @@ export interface FileRoutesByFullPath {
   '/habits': typeof AuthenticatedHabitsRoute
   '/monthly': typeof AuthenticatedMonthlyRoute
   '/unscheduled': typeof AuthenticatedUnscheduledRoute
+  '/weekly': typeof AuthenticatedWeeklyRoute
   '/projects/$id': typeof AuthenticatedProjectsIdRoute
   '/roadmaps/$id': typeof AuthenticatedRoadmapsIdRoute
   '/projects/': typeof AuthenticatedProjectsIndexRoute
@@ -89,6 +96,7 @@ export interface FileRoutesByTo {
   '/habits': typeof AuthenticatedHabitsRoute
   '/monthly': typeof AuthenticatedMonthlyRoute
   '/unscheduled': typeof AuthenticatedUnscheduledRoute
+  '/weekly': typeof AuthenticatedWeeklyRoute
   '/': typeof AuthenticatedIndexRoute
   '/projects/$id': typeof AuthenticatedProjectsIdRoute
   '/roadmaps/$id': typeof AuthenticatedRoadmapsIdRoute
@@ -102,6 +110,7 @@ export interface FileRoutesById {
   '/_authenticated/habits': typeof AuthenticatedHabitsRoute
   '/_authenticated/monthly': typeof AuthenticatedMonthlyRoute
   '/_authenticated/unscheduled': typeof AuthenticatedUnscheduledRoute
+  '/_authenticated/weekly': typeof AuthenticatedWeeklyRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/projects/$id': typeof AuthenticatedProjectsIdRoute
   '/_authenticated/roadmaps/$id': typeof AuthenticatedRoadmapsIdRoute
@@ -116,6 +125,7 @@ export interface FileRouteTypes {
     | '/habits'
     | '/monthly'
     | '/unscheduled'
+    | '/weekly'
     | '/projects/$id'
     | '/roadmaps/$id'
     | '/projects/'
@@ -126,6 +136,7 @@ export interface FileRouteTypes {
     | '/habits'
     | '/monthly'
     | '/unscheduled'
+    | '/weekly'
     | '/'
     | '/projects/$id'
     | '/roadmaps/$id'
@@ -138,6 +149,7 @@ export interface FileRouteTypes {
     | '/_authenticated/habits'
     | '/_authenticated/monthly'
     | '/_authenticated/unscheduled'
+    | '/_authenticated/weekly'
     | '/_authenticated/'
     | '/_authenticated/projects/$id'
     | '/_authenticated/roadmaps/$id'
@@ -194,6 +206,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedUnscheduledRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/weekly': {
+      id: '/_authenticated/weekly'
+      path: '/weekly'
+      fullPath: '/weekly'
+      preLoaderRoute: typeof AuthenticatedWeeklyRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/projects/': {
       id: '/_authenticated/projects/'
       path: '/projects'
@@ -229,6 +248,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedHabitsRoute: typeof AuthenticatedHabitsRoute
   AuthenticatedMonthlyRoute: typeof AuthenticatedMonthlyRoute
   AuthenticatedUnscheduledRoute: typeof AuthenticatedUnscheduledRoute
+  AuthenticatedWeeklyRoute: typeof AuthenticatedWeeklyRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedProjectsIdRoute: typeof AuthenticatedProjectsIdRoute
   AuthenticatedRoadmapsIdRoute: typeof AuthenticatedRoadmapsIdRoute
@@ -240,6 +260,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedHabitsRoute: AuthenticatedHabitsRoute,
   AuthenticatedMonthlyRoute: AuthenticatedMonthlyRoute,
   AuthenticatedUnscheduledRoute: AuthenticatedUnscheduledRoute,
+  AuthenticatedWeeklyRoute: AuthenticatedWeeklyRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedProjectsIdRoute: AuthenticatedProjectsIdRoute,
   AuthenticatedRoadmapsIdRoute: AuthenticatedRoadmapsIdRoute,

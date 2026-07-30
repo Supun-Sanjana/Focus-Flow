@@ -4,6 +4,7 @@ import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import {
   CalendarDays, Inbox, CalendarRange, ListTodo, Flame, Plus, Focus as FocusIcon, LogOut,
   MapIcon,
+  Repeat,
 } from "lucide-react";
 import { projectsQO } from "../lib/queries";
 import { useUI } from "../lib/store";
@@ -13,10 +14,12 @@ import { NotificationsBell } from "./NitificationBell";
 const NAV = [
   { to: "/", label: "Today", icon: CalendarDays },
   { to: "/unscheduled", label: "Unscheduled", icon: Inbox },
+  { to: "/weekly", label: "Weekly", icon: Repeat },
   { to: "/monthly", label: "Monthly", icon: CalendarRange },
   { to: "/roadmaps", label: "Roadmaps", icon: MapIcon },
   { to: "/habits", label: "Habits", icon: Flame },
 ];
+
 
 export function Sidebar() {
   const { data: projects } = useSuspenseQuery(projectsQO);
