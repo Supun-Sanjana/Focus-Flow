@@ -28,7 +28,7 @@ export default defineConfig({
     tsconfigPaths(),
     tailwindcss(),
     nitro({
-      preset: process.env.NITRO_PRESET || "cloudflare-module",
+      preset: process.env.NITRO_PRESET || (process.env.VERCEL ? "vercel" : "cloudflare-module"),
     }),
   ],
 });
