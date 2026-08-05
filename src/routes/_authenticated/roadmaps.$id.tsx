@@ -1,16 +1,31 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { ChevronLeft, Plus, Trash2, GripVertical, Palette, X } from "lucide-react";
+import { ChevronLeft, Plus, Trash2, GripVertical, Palette, X, LayoutList, Frame } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { roadmapQO } from "../../lib/roadmap-queries";
 import { defaultPhase, PHASE_ACCENTS, uid, updateRoadmap, type RoadmapData, type RoadmapItem, type RoadmapPhase } from "../../lib/roadmap-api";
+import { PhaseCard, STATUS_META } from "../../components/roadmap/PhaseCard";
+import { RoadmapCanvas } from "../../components/roadmap/RoadmapCanvas";
+
+
+
+
+
+
+
+
+
 
 export const Route = createFileRoute("/_authenticated/roadmaps/$id")({
-  head: ({ params }) => ({
+  head: () => ({
     meta: [
-      { title: `Roadmap — Focus` },
-      { name: "description", content: `Roadmap ${params.id}` },
+      { title: "Roadmap canvas — Focus" },
+      { name: "description", content: "Plan a goal on a phase-by-phase roadmap canvas with progress tracking." },
+      { property: "og:title", content: "Roadmap canvas — Focus" },
+      { property: "og:description", content: "Drag phases on a canvas and track what's done, in progress and upcoming." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   loader: ({ context, params }) => context.queryClient.ensureQueryData(roadmapQO(params.id)),
@@ -26,6 +41,7 @@ function RoadmapDetail() {
   const [description, setDescription] = useState(roadmap.description ?? "");
   const [data, setData] = useState<RoadmapData>(roadmap.data ?? { phases: [] });
   const [saving, setSaving] = useState<"idle" | "saving" | "saved">("idle");
+  const [view, setView] = useState<"canvas" | "list">("canvas");
   const firstRun = useRef(true);
 
   // Auto-save (debounced)
@@ -48,16 +64,17 @@ function RoadmapDetail() {
   const mutatePhases = (fn: (phases: RoadmapPhase[]) => RoadmapPhase[]) =>
     setData((d) => ({ ...d, phases: fn(d.phases) }));
 
-  const addPhase = () => {
-    const accent = PHASE_ACCENTS[data.phases.length % PHASE_ACCENTS.length];
-    mutatePhases((phases) => [...phases, defaultPhase(`Phase ${phases.length + 1}`, accent)]);
-  };
+  const addPhase = (pos?: { x: number; y: number }) =>
+    mutatePhases((phases) => {
+      const accent = PHASE_ACCENTS[phases.length % PHASE_ACCENTS.length];
+      const p = defaultPhase(`Phase ${phases.length + 1}`, accent, phases.length);
+      return [...phases, pos ? { ...p, pos } : p];
+    });
 
   const updatePhase = (pid: string, patch: Partial<RoadmapPhase>) =>
     mutatePhases((phases) => phases.map((p) => (p.id === pid ? { ...p, ...patch } : p)));
 
-  const removePhase = (pid: string) =>
-    mutatePhases((phases) => phases.filter((p) => p.id !== pid));
+  const removePhase = (pid: string) => mutatePhases((phases) => phases.filter((p) => p.id !== pid));
 
   const movePhase = (pid: string, dir: -1 | 1) =>
     mutatePhases((phases) => {
@@ -69,6 +86,28 @@ function RoadmapDetail() {
       [copy[i], copy[j]] = [copy[j], copy[i]];
       return copy;
     });
+
+  const doneCount = data.phases.filter((p) => (p.status ?? "todo") === "done").length;
+  const current = data.phases.find((p) => (p.status ?? "todo") === "current");
+  const pct = data.phases.length ? Math.round((doneCount / data.phases.length) * 100) : 0;
+
+  if (view === "canvas") {
+    return (
+      <RoadmapCanvas
+        phases={data.phases}
+        onChangePhase={updatePhase}
+        onDeletePhase={removePhase}
+        onAddPhase={(pos) => addPhase(pos)}
+        title={title}
+        onTitleChange={setTitle}
+        description={description}
+        onDescriptionChange={setDescription}
+        saving={saving}
+        view={view}
+        onViewChange={setView}
+      />
+    );
+  }
 
   return (
     <div>
@@ -82,19 +121,78 @@ function RoadmapDetail() {
         </span>
       </div>
 
-      <input
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        className="w-full bg-transparent text-[26px] font-semibold tracking-tight outline-none placeholder:text-muted-foreground"
-        placeholder="Roadmap title"
-      />
-      <textarea
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-        placeholder="Describe your goal, timeline, or context…"
-        rows={2}
-        className="mt-1 w-full resize-none bg-transparent text-[13px] text-muted-foreground outline-none placeholder:text-muted-foreground/60"
-      />
+      <div className="flex items-start gap-4">
+        <div className="min-w-0 flex-1">
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="w-full bg-transparent text-[26px] font-semibold tracking-tight outline-none placeholder:text-muted-foreground"
+            placeholder="Roadmap title"
+          />
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Describe your goal, timeline, or context…"
+            rows={2}
+            className="mt-1 w-full resize-none bg-transparent text-[13px] text-muted-foreground outline-none placeholder:text-muted-foreground/60"
+          />
+        </div>
+        <div className="flex shrink-0 items-center gap-1 rounded-lg border border-border p-1">
+          <button
+            onClick={() => setView("canvas")}
+            className={`flex items-center gap-1.5 rounded px-2.5 py-1 text-[12px] font-medium ${view === "canvas" ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted"}`}
+          >
+            <Frame className="h-3.5 w-3.5" /> Canvas
+          </button>
+          <button
+            onClick={() => setView("list")}
+            className={`flex items-center gap-1.5 rounded px-2.5 py-1 text-[12px] font-medium ${view === "list" ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted"}`}
+          >
+            <LayoutList className="h-3.5 w-3.5" /> List
+          </button>
+        </div>
+      </div>
+
+      {/* Progress / current place */}
+      <div className="mt-4 rounded-lg border border-border bg-card px-4 py-3">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px]">
+          <span className="font-semibold" style={{ color: STATUS_META.done.color }}>
+            {doneCount}/{data.phases.length} phases done
+          </span>
+          <span className="text-muted-foreground">·</span>
+          <span className="text-muted-foreground">
+            You are here:{" "}
+            <span className="font-medium text-foreground">
+              {current ? current.title : doneCount === data.phases.length && data.phases.length ? "All phases complete 🎉" : "Not started"}
+            </span>
+          </span>
+          <span className="ml-auto tabular-nums text-muted-foreground">{pct}%</span>
+        </div>
+        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+          <div
+            className="h-full rounded-full transition-all"
+            style={{ width: `${pct}%`, backgroundColor: STATUS_META.done.color }}
+          />
+        </div>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {data.phases.map((p, i) => {
+            const s = p.status ?? "todo";
+            return (
+              <button
+                key={p.id}
+                onClick={() =>
+                  updatePhase(p.id, { status: s === "done" ? "todo" : s === "current" ? "done" : "current" })
+                }
+                className="rounded px-2 py-0.5 text-[10.5px] font-medium"
+                style={{ backgroundColor: `${STATUS_META[s].color}1f`, color: STATUS_META[s].color }}
+                title="Click to advance status"
+              >
+                {String(i + 1).padStart(2, "0")} {p.title}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       <div className="mt-6 space-y-4">
         {data.phases.map((phase, idx) => (
@@ -108,288 +206,13 @@ function RoadmapDetail() {
             onMove={(dir) => movePhase(phase.id, dir)}
           />
         ))}
-
         <button
-          onClick={addPhase}
+          onClick={() => addPhase()}
           className="w-full flex items-center justify-center gap-2 py-4 rounded-xl border border-dashed border-border text-[13px] text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
         >
           <Plus className="h-4 w-4" /> Add phase
         </button>
       </div>
-    </div>
-  );
-}
-
-function PhaseCard({
-  phase,
-  index,
-  total,
-  onChange,
-  onDelete,
-  onMove,
-}: {
-  phase: RoadmapPhase;
-  index: number;
-  total: number;
-  onChange: (patch: Partial<RoadmapPhase>) => void;
-  onDelete: () => void;
-  onMove: (dir: -1 | 1) => void;
-}) {
-  const [showPalette, setShowPalette] = useState(false);
-
-  const updateColumn = (cid: string, patch: Partial<RoadmapPhase["columns"][number]>) =>
-    onChange({ columns: phase.columns.map((c) => (c.id === cid ? { ...c, ...patch } : c)) });
-
-  const addItem = (cid: string, text: string) => {
-    if (!text.trim()) return;
-    const item: RoadmapItem = { id: uid(), text: text.trim() };
-    onChange({
-      columns: phase.columns.map((c) => (c.id === cid ? { ...c, items: [...c.items, item] } : c)),
-    });
-  };
-
-  const removeItem = (cid: string, iid: string) =>
-    onChange({
-      columns: phase.columns.map((c) =>
-        c.id === cid ? { ...c, items: c.items.filter((i) => i.id !== iid) } : c,
-      ),
-    });
-
-  const updateItem = (cid: string, iid: string, patch: Partial<RoadmapItem>) =>
-    onChange({
-      columns: phase.columns.map((c) =>
-        c.id === cid ? { ...c, items: c.items.map((i) => (i.id === iid ? { ...i, ...patch } : i)) } : c,
-      ),
-    });
-
-  return (
-    <div
-      className="rounded-xl border bg-card overflow-hidden"
-      style={{ borderColor: `${phase.accent}33` }}
-    >
-      {/* Header */}
-      <div
-        className="flex items-center gap-2 px-4 py-2.5 border-b"
-        style={{
-          background: `linear-gradient(90deg, ${phase.accent}18, transparent)`,
-          borderColor: `${phase.accent}33`,
-        }}
-      >
-        <span className="h-2 w-2 rounded-full" style={{ backgroundColor: phase.accent }} />
-        <input
-          value={phase.title}
-          onChange={(e) => onChange({ title: e.target.value })}
-          className="bg-transparent text-[14px] font-semibold outline-none min-w-0 flex-shrink"
-          style={{ color: phase.accent }}
-        />
-        <input
-          value={phase.meta ?? ""}
-          onChange={(e) => onChange({ meta: e.target.value })}
-          placeholder="Weeks 1-2 · ~7 hrs"
-          className="ml-auto bg-transparent text-[11px] text-muted-foreground outline-none text-right w-48 placeholder:text-muted-foreground/50"
-        />
-        <div className="relative">
-          <button
-            onClick={() => setShowPalette((s) => !s)}
-            className="p-1 rounded hover:bg-muted text-muted-foreground"
-            aria-label="Change color"
-          >
-            <Palette className="h-3.5 w-3.5" />
-          </button>
-          {showPalette && (
-            <div className="absolute right-0 top-7 z-10 flex gap-1 p-1.5 rounded-md border border-border bg-popover shadow-md">
-              {PHASE_ACCENTS.map((c) => (
-                <button
-                  key={c}
-                  onClick={() => {
-                    onChange({ accent: c });
-                    setShowPalette(false);
-                  }}
-                  className="h-4 w-4 rounded-full ring-1 ring-black/10"
-                  style={{ backgroundColor: c }}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-        <button
-          onClick={() => onMove(-1)}
-          disabled={index === 0}
-          className="p-1 rounded hover:bg-muted text-muted-foreground disabled:opacity-30"
-          aria-label="Move up"
-        >
-          <GripVertical className="h-3.5 w-3.5 rotate-90" />
-        </button>
-        <button
-          onClick={() => onMove(1)}
-          disabled={index === total - 1}
-          className="p-1 rounded hover:bg-muted text-muted-foreground disabled:opacity-30"
-          aria-label="Move down"
-        >
-          <GripVertical className="h-3.5 w-3.5 -rotate-90" />
-        </button>
-        <button
-          onClick={() => {
-            if (confirm(`Delete ${phase.title}?`)) onDelete();
-          }}
-          className="p-1 rounded hover:bg-muted text-muted-foreground"
-          aria-label="Delete phase"
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </button>
-      </div>
-
-      {/* Columns */}
-      <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-border">
-        {phase.columns.map((col) => (
-          <ColumnView
-            key={col.id}
-            column={col}
-            onTitleChange={(title) => updateColumn(col.id, { title })}
-            onAdd={(text) => addItem(col.id, text)}
-            onRemove={(iid) => removeItem(col.id, iid)}
-            onUpdate={(iid, patch) => updateItem(col.id, iid, patch)}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function ColumnView({
-  column,
-  onTitleChange,
-  onAdd,
-  onRemove,
-  onUpdate,
-}: {
-  column: RoadmapPhase["columns"][number];
-  onTitleChange: (t: string) => void;
-  onAdd: (text: string) => void;
-  onRemove: (iid: string) => void;
-  onUpdate: (iid: string, patch: Partial<RoadmapItem>) => void;
-}) {
-  const [draft, setDraft] = useState("");
-
-  return (
-    <div className="p-3">
-      <input
-        value={column.title}
-        onChange={(e) => onTitleChange(e.target.value)}
-        className="w-full bg-transparent text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground outline-none mb-2"
-      />
-      <div className="space-y-1.5">
-        {column.items.map((item) => (
-          <ItemRow
-            key={item.id}
-            item={item}
-            onChange={(patch) => onUpdate(item.id, patch)}
-            onRemove={() => onRemove(item.id)}
-          />
-        ))}
-      </div>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          onAdd(draft);
-          setDraft("");
-        }}
-        className="mt-2"
-      >
-        <input
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          placeholder="+ Add item"
-          className="w-full bg-transparent text-[12.5px] outline-none placeholder:text-muted-foreground/60 py-1 border-b border-transparent focus:border-border transition-colors"
-        />
-      </form>
-    </div>
-  );
-}
-
-function ItemRow({
-  item,
-  onChange,
-  onRemove,
-}: {
-  item: RoadmapItem;
-  onChange: (patch: Partial<RoadmapItem>) => void;
-  onRemove: () => void;
-}) {
-  const [chipDraft, setChipDraft] = useState("");
-  const [addingChip, setAddingChip] = useState(false);
-
-  return (
-    <div className="group flex items-start gap-2 rounded-md px-1.5 py-1 hover:bg-muted/50">
-      <span className="mt-2 h-1 w-2 shrink-0 bg-foreground/60" />
-      <div className="flex-1 min-w-0">
-        <input
-          value={item.text}
-          onChange={(e) => onChange({ text: e.target.value })}
-          className="w-full bg-transparent text-[13px] outline-none"
-        />
-        {(item.chips?.length || addingChip) && (
-          <div className="mt-1 flex flex-wrap gap-1">
-            {item.chips?.map((chip, i) => (
-              <span
-                key={i}
-                className="group/chip inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 text-[10.5px] font-mono text-foreground/80"
-              >
-                {chip}
-                <button
-                  onClick={() =>
-                    onChange({ chips: item.chips?.filter((_, idx) => idx !== i) })
-                  }
-                  className="opacity-0 group-hover/chip:opacity-100"
-                >
-                  <X className="h-2.5 w-2.5" />
-                </button>
-              </span>
-            ))}
-            {addingChip && (
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (chipDraft.trim()) {
-                    onChange({ chips: [...(item.chips ?? []), chipDraft.trim()] });
-                    setChipDraft("");
-                  }
-                  setAddingChip(false);
-                }}
-                className="inline"
-              >
-                <input
-                  autoFocus
-                  value={chipDraft}
-                  onChange={(e) => setChipDraft(e.target.value)}
-                  onBlur={() => {
-                    if (chipDraft.trim())
-                      onChange({ chips: [...(item.chips ?? []), chipDraft.trim()] });
-                    setChipDraft("");
-                    setAddingChip(false);
-                  }}
-                  placeholder="chip"
-                  className="w-16 rounded bg-muted px-1.5 py-0.5 text-[10.5px] font-mono outline-none"
-                />
-              </form>
-            )}
-          </div>
-        )}
-      </div>
-      <button
-        onClick={() => setAddingChip(true)}
-        className="opacity-0 group-hover:opacity-100 text-[10px] text-muted-foreground hover:text-foreground"
-        title="Add tag"
-      >
-        +tag
-      </button>
-      <button
-        onClick={onRemove}
-        className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"
-        aria-label="Remove"
-      >
-        <X className="h-3.5 w-3.5" />
-      </button>
     </div>
   );
 }

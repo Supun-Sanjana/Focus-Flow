@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate, redirect, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "../integrations/supabase/client";
+import { getSessionSafe } from "../lib/auth-recovery";
 import {
   Focus as FocusIcon,
   ArrowRight,
@@ -31,16 +32,25 @@ export const Route = createFileRoute("/auth")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  beforeLoad: async () => {
+  ssr: false,
+  validateSearch: (s: Record<string, unknown>): { next?: string } => {
+    const next = typeof s.next === "string" && s.next.startsWith("/") && !s.next.startsWith("//") ? s.next : undefined;
+    return next ? { next } : {};
+  },
+
+  beforeLoad: async ({ search }) => {
     if (typeof window === "undefined") return;
-    const { data } = await supabase.auth.getUser();
-    if (data.user) throw redirect({ to: "/" });
+    // getUser() verifies the JWT and fails on device clock skew ("JWT issued at
+    // future"); the local session read is enough to know we're already signed in.
+    const session = await getSessionSafe();
+    if (session?.user) throw redirect({ href: search.next ?? "/" });
   },
   component: AuthPage,
 });
 
 function AuthPage() {
   const navigate = useNavigate();
+  const { next } = Route.useSearch();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -48,12 +58,18 @@ function AuthPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const goNext = () => {
+    if (next) window.location.href = next;
+    else navigate({ to: "/" });
+  };
+
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
-      if (session) navigate({ to: "/" });
+      if (session) goNext();
     });
     return () => sub.subscription.unsubscribe();
-  }, [navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navigate, next]);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,20 +80,21 @@ function AuthPage() {
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: window.location.origin },
+          options: { emailRedirectTo: next ? window.location.origin + next : window.location.origin },
         });
         if (error) throw error;
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       }
-      navigate({ to: "/" });
+      goNext();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
       setLoading(false);
     }
   };
+
 
   const isSignin = mode === "signin";
 

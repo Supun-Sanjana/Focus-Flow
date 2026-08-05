@@ -12,12 +12,16 @@ export type RoadmapColumn = {
   items: RoadmapItem[];
 };
 
+export type PhaseStatus = "todo" | "current" | "done";
+
 export type RoadmapPhase = {
   id: string;
   title: string;
   meta?: string; // e.g. "Weeks 1-2 · ~7 hrs"
   accent: string; // hex color for header dot / border
   columns: RoadmapColumn[];
+  status?: PhaseStatus;
+  pos?: { x: number; y: number }; // canvas position
 };
 
 export type RoadmapData = {
@@ -49,7 +53,7 @@ export async function fetchRoadmap(id: string): Promise<Roadmap> {
 }
 
 export async function createRoadmap(input: { title: string; description?: string }): Promise<Roadmap> {
-  const data: RoadmapData = { phases: [defaultPhase("Phase 1", "#7C3AED")] };
+  const data: RoadmapData = { phases: [defaultPhase("Phase 1", "#7C3AED", 0)] };
   const { data: row, error } = await table()
     .insert({ title: input.title, description: input.description ?? null, data })
     .select()
@@ -57,6 +61,20 @@ export async function createRoadmap(input: { title: string; description?: string
   if (error) throw error;
   return row as Roadmap;
 }
+
+export async function createRoadmapFromData(input: {
+  title: string;
+  description?: string;
+  data: RoadmapData;
+}): Promise<Roadmap> {
+  const { data: row, error } = await table()
+    .insert({ title: input.title, description: input.description ?? null, data: input.data })
+    .select()
+    .single();
+  if (error) throw error;
+  return row as Roadmap;
+}
+
 
 export async function updateRoadmap(id: string, patch: Partial<Roadmap>) {
   const { error } = await table().update(patch).eq("id", id);
@@ -72,16 +90,16 @@ export function uid() {
   return Math.random().toString(36).slice(2, 10);
 }
 
-export function defaultPhase(title: string, accent: string): RoadmapPhase {
+export function defaultPhase(title: string, accent: string, index = 0): RoadmapPhase {
   return {
     id: uid(),
     title,
     meta: "",
     accent,
+    status: "todo",
+    pos: { x: 40 + (index % 3) * 480, y: 40 + Math.floor(index / 3) * 440 },
     columns: [
       { id: uid(), title: "Topics", items: [] },
-      { id: uid(), title: "Why it matters", items: [] },
-      { id: uid(), title: "Notes / Angle", items: [] },
     ],
   };
 }
