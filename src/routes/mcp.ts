@@ -1,17 +1,88 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { createTanStackMcpHandler } from "@lovable.dev/mcp-js/stacks/tanstack";
-import mcp from "../lib/mcp/index";
+import { allTools, extractBearerToken, invokeMcpTool } from "../lib/mcp/index";
 import { createElement } from "react";
 import { Server, CheckCircle2, ShieldCheck, Cpu } from "lucide-react";
 
 export const Route = createFileRoute("/mcp")({
   server: {
     handlers: {
-      ANY: createTanStackMcpHandler(mcp, {
-        resourcePath: "/mcp",
-        metadataPath: "/.well-known/oauth-protected-resource",
-        trustForwardedHost: true,
-      }),
+      POST: async ({ request }) => {
+        const token = extractBearerToken(request);
+        let body: any = {};
+        try {
+          body = await request.json();
+        } catch {
+          // empty body
+        }
+
+        // Standard JSON-RPC 2.0 handling
+        if (body.jsonrpc === "2.0") {
+          const method = body.method;
+          const params = body.params ?? {};
+          const id = body.id ?? null;
+
+          if (method === "initialize") {
+            return Response.json({
+              jsonrpc: "2.0",
+              id,
+              result: {
+                protocolVersion: "2024-11-05",
+                capabilities: { tools: {} },
+                serverInfo: { name: "focus-flow", version: "0.1.0" },
+              },
+            });
+          }
+
+          if (method === "tools/list") {
+            const catalog = allTools.map((t) => ({
+              name: t.name,
+              description: t.description,
+              inputSchema: { type: "object", properties: t.inputSchema },
+            }));
+            return Response.json({
+              jsonrpc: "2.0",
+              id,
+              result: { tools: catalog },
+            });
+          }
+
+          if (method === "tools/call") {
+            const toolName = params.name;
+            const toolArgs = params.arguments ?? {};
+            const result = await invokeMcpTool(toolName, toolArgs, token);
+            return Response.json({
+              jsonrpc: "2.0",
+              id,
+              result,
+            });
+          }
+
+          if (method === "notifications/initialized") {
+            return new Response(null, { status: 204 });
+          }
+
+          return Response.json({
+            jsonrpc: "2.0",
+            id,
+            error: { code: -32601, message: `Method '${method}' not found` },
+          });
+        }
+
+        return Response.json({
+          jsonrpc: "2.0",
+          id: null,
+          error: { code: -32600, message: "Invalid JSON-RPC request" },
+        });
+      },
+      OPTIONS: () => {
+        return new Response(null, {
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+            "Access-Control-Allow-Headers": "Authorization, Content-Type",
+          },
+        });
+      },
     },
   },
   component: McpInfoPage,
