@@ -33,7 +33,19 @@ export default defineConfig({
       hooks: {
         compiled(nitroInstance) {
           try {
-            const vercelIndex = path.resolve(nitroInstance.options.output.dir, "static/index.html");
+            const vercelDir = nitroInstance.options.output.dir;
+            const serverFuncDir = path.resolve(vercelDir, "functions/__server.func");
+            if (fs.existsSync(serverFuncDir)) {
+              const vcConfigPath = path.resolve(serverFuncDir, ".vc-config.json");
+              const vcConfig = {
+                runtime: "nodejs20.x",
+                handler: "index.mjs",
+                launcherType: "Nodejs",
+              };
+              fs.writeFileSync(vcConfigPath, JSON.stringify(vcConfig, null, 2));
+            }
+
+            const vercelIndex = path.resolve(vercelDir, "static/index.html");
             if (fs.existsSync(vercelIndex)) {
               fs.unlinkSync(vercelIndex);
             }
@@ -42,7 +54,7 @@ export default defineConfig({
               fs.unlinkSync(publicIndex);
             }
           } catch (e) {
-            console.warn("Failed to remove static index.html:", e);
+            console.warn("Failed to configure Vercel output:", e);
           }
         },
       },
