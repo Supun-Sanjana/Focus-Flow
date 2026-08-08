@@ -34,6 +34,30 @@ export default defineConfig({
         compiled(nitroInstance) {
           try {
             const vercelDir = nitroInstance.options.output.dir;
+            
+            // Ensure Vercel Build Output API v3 config.json exists
+            const vercelConfigPath = path.resolve(vercelDir, "config.json");
+            const vercelConfig = {
+              version: 3,
+              routes: [
+                {
+                  src: "/assets/(.*)",
+                  headers: {
+                    "cache-control": "public, max-age=31536000, immutable",
+                  },
+                  continue: true,
+                },
+                {
+                  handle: "filesystem",
+                },
+                {
+                  src: "/(.*)",
+                  dest: "/__server",
+                },
+              ],
+            };
+            fs.writeFileSync(vercelConfigPath, JSON.stringify(vercelConfig, null, 2));
+
             const serverFuncDir = path.resolve(vercelDir, "functions/__server.func");
             if (fs.existsSync(serverFuncDir)) {
               const vcConfigPath = path.resolve(serverFuncDir, ".vc-config.json");
