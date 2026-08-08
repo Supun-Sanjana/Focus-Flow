@@ -5,6 +5,7 @@ import tsconfigPaths from "vite-tsconfig-paths";
 import tailwindcss from "@tailwindcss/vite";
 import { nitro } from "nitro/vite";
 import path from "node:path";
+import fs from "node:fs";
 
 export default defineConfig({
   resolve: {
@@ -29,6 +30,22 @@ export default defineConfig({
     tailwindcss(),
     nitro({
       preset: process.env.NITRO_PRESET || (process.env.VERCEL ? "vercel" : "cloudflare-module"),
+      hooks: {
+        compiled(nitroInstance) {
+          try {
+            const vercelIndex = path.resolve(nitroInstance.options.output.dir, "static/index.html");
+            if (fs.existsSync(vercelIndex)) {
+              fs.unlinkSync(vercelIndex);
+            }
+            const publicIndex = path.resolve(nitroInstance.options.output.publicDir, "index.html");
+            if (fs.existsSync(publicIndex)) {
+              fs.unlinkSync(publicIndex);
+            }
+          } catch (e) {
+            console.warn("Failed to remove static index.html:", e);
+          }
+        },
+      },
     }),
   ],
 });
